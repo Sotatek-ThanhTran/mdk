@@ -142,6 +142,16 @@ static inline void gpio_output_enable(int pin, bool enable) {
 static inline void gpio_output(int pin) {
   GPIO_FUNC_OUT_SEL_CFG_REG[pin] = 256;  // Simple output, TRM 4.3.3
   gpio_output_enable(pin, 1);
+
+  // Index lookup table for IO_MUX_GPIOx_REG, TRM 4.12
+  unsigned char map[40] = {17, 34, 16, 33, 18, 27, 24, 25, 26, 21, // 0-9
+			   22, 23, 13, 14, 12, 15, 19, 20, 28, 29, // 10-19
+			   30, 31, 32, 35, 36, 9, 10, 11, 0, 0,	   // 20-29
+			   0, 0, 7, 8, 5, 6, 1, 2, 3, 4};	   // 30-39
+  volatile uint32_t *mux = REG(0X3ff49000);
+  if (pin < 0 || pin > (int)sizeof(map) || map[pin] == 0)
+	  return;
+  mux[map[pin]] = 0x00002800; // Select Function 2 and increase strength
 }
 
 static inline void gpio_write(int pin, bool value) {
